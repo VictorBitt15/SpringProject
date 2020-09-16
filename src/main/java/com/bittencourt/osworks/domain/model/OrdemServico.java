@@ -1,7 +1,9 @@
 package com.bittencourt.osworks.domain.model;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -10,6 +12,10 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+
+import com.bittencourt.osworks.api.model.Comentario;
+import com.bittencourt.osworks.domain.exception.NegocioException;
 
 @Entity
 public class OrdemServico {
@@ -18,19 +24,29 @@ public class OrdemServico {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
+	
 	@ManyToOne
 	private Cliente cliente;
-	
 	private String descricao;
 	private BigDecimal preco;
 	
+	
 	@Enumerated(EnumType.STRING)
 	private StatusOrdemServico status;
+	private OffsetDateTime dataAbertura;
+	private OffsetDateTime dataFinalizacao;
+	@OneToMany(mappedBy="ordemServico")
+	private List<Comentario> comentarios = new ArrayList<>();
 	
-	private LocalDateTime dataAbertura;
-	private LocalDateTime dataFinalizacao;
+	
 	public Long getId() {
 		return id;
+	}
+	public List<Comentario> getComentarios() {
+		return comentarios;
+	}
+	public void setComentarios(List<Comentario> comentarios) {
+		this.comentarios = comentarios;
 	}
 	public void setId(Long id) {
 		this.id = id;
@@ -59,16 +75,16 @@ public class OrdemServico {
 	public void setStatus(StatusOrdemServico status) {
 		this.status = status;
 	}
-	public LocalDateTime getDataAbertura() {
+	public OffsetDateTime getDataAbertura() {
 		return dataAbertura;
 	}
-	public void setDataAbertura(LocalDateTime dataAbertura) {
+	public void setDataAbertura(OffsetDateTime dataAbertura) {
 		this.dataAbertura = dataAbertura;
 	}
-	public LocalDateTime getDataFinalizacao() {
+	public OffsetDateTime getDataFinalizacao() {
 		return dataFinalizacao;
 	}
-	public void setDataFinalizacao(LocalDateTime dataFinalizacao) {
+	public void setDataFinalizacao(OffsetDateTime dataFinalizacao) {
 		this.dataFinalizacao = dataFinalizacao;
 	}
 	@Override
@@ -93,6 +109,21 @@ public class OrdemServico {
 		} else if (!id.equals(other.id))
 			return false;
 		return true;
+	}
+	
+	public boolean podeSerFinalizada() {
+		return StatusOrdemServico.ABERTA.equals(getStatus());
+	}
+	public boolean naoPodeSerFinalizada() {
+		return !podeSerFinalizada();
+	}
+	public void finalizar() {
+		if(naoPodeSerFinalizada()) {
+			throw new NegocioException("Ordem de servico nao pode ser finalizada");
+		}
+		
+		setStatus(StatusOrdemServico.FINALIZADA);
+		setDataFinalizacao(OffsetDateTime.now());
 	}
 	
 	
